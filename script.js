@@ -6,19 +6,21 @@ const CONFIG = {
   deliveryFee: 1000                  // FCFA, 0 si gratuit
 };
 
+/* inStock: false = "Rupture de stock" (utilisé seulement si le site fonctionne sans PHP ;
+   avec PHP, le stock se gère dans l'espace admin) */
 let PRODUCTS = [
-  { id: 1, name: "Sankal", cat: "Sankal", icon: "🌾", desc: "Préparé avec des céréales locales.", options: [{ l: "500 g", p: 1500 }, { l: "1 kg", p: 2800 }] },
-  { id: 2, name: "Arraw", cat: "Arraw", icon: "🥣", desc: "Un classique du terroir, fait main.", options: [{ l: "500 g", p: 1500 }, { l: "1 kg", p: 2800 }] },
-  { id: 3, name: "Thiakry", cat: "Thiakry", icon: "🍚", desc: "Le dessert traditionnel, prêt à déguster.", options: [{ l: "Pot 500 ml", p: 1000 }, { l: "Pot 1 L", p: 1800 }] },
-  { id: 4, name: "Thiere", cat: "Thiere", icon: "🍲", desc: "Céréale roulée à la vapeur, savoureuse.", options: [{ l: "500 g", p: 1500 }, { l: "1 kg", p: 2800 }] }
+  { id: 1, name: "Sankal", cat: "Sankal", icon: "🌾", inStock: true, desc: "Préparé avec des céréales locales.", options: [{ l: "Sachet 250 g", p: 800 }, { l: "Sachet 500 g", p: 1500 }, { l: "Sachet 1000 g", p: 2800 }] },
+  { id: 2, name: "Arraw", cat: "Arraw", icon: "🥣", inStock: true, desc: "Un classique du terroir, fait main.", options: [{ l: "Sachet 250 g", p: 800 }, { l: "Sachet 500 g", p: 1500 }, { l: "Sachet 1000 g", p: 2800 }] },
+  { id: 3, name: "Thiakry", cat: "Thiakry", icon: "🍚", inStock: true, desc: "Le dessert traditionnel, prêt à déguster.", options: [{ l: "Sachet 250 g", p: 500 }, { l: "Sachet 500 g", p: 1000 }, { l: "Sachet 1000 g", p: 1800 }] },
+  { id: 4, name: "Thiere", cat: "Thiere", icon: "🍲", inStock: true, desc: "Céréale roulée à la vapeur, savoureuse.", options: [{ l: "Sachet 250 g", p: 800 }, { l: "Sachet 500 g", p: 1500 }, { l: "Sachet 1000 g", p: 2800 }] }
 ];
 
 /* ===== OUTILS ===== */
 const $ = s => document.querySelector(s);
 const fmt = n => n.toLocaleString("fr-FR") + " FCFA";
 let cart = [];
-try { cart = JSON.parse(localStorage.getItem("anddeggo_cart")) || []; } catch (e) {}
-const save = () => { try { localStorage.setItem("anddeggo_cart", JSON.stringify(cart)); } catch (e) {} };
+try { cart = JSON.parse(localStorage.getItem("anddeggo_cart2")) || []; } catch (e) {}
+const save = () => { try { localStorage.setItem("anddeggo_cart2", JSON.stringify(cart)); } catch (e) {} };
 
 /* ===== PRODUITS ===== */
 let filter = "Tous";
@@ -29,20 +31,25 @@ function renderFilters() {
 }
 function renderProducts() {
   const list = PRODUCTS.filter(p => filter === "Tous" || p.cat === filter);
-  $("#grid").innerHTML = list.map(p => `
-    <div class="card prod">
+  $("#grid").innerHTML = list.map(p => {
+    const out = p.inStock === false;
+    return `
+    <div class="card prod${out ? " out" : ""}">
+      ${out ? '<span class="badge-out">Rupture de stock</span>' : ""}
       <div class="ico">${p.icon}</div>
       <h3>${p.name}</h3>
       <p>${p.desc}</p>
-      <select id="opt${p.id}">${p.options.map((o, i) => `<option value="${i}">${o.l} – ${fmt(o.p)}</option>`).join("")}</select>
-      <div class="row"><button class="btn" data-add="${p.id}">Ajouter</button></div>
-    </div>`).join("");
-  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => add(+b.dataset.add));
+      <select id="opt${p.id}"${out ? " disabled" : ""}>${p.options.map((o, i) => `<option value="${i}">${o.l} – ${fmt(o.p)}</option>`).join("")}</select>
+      <div class="row"><button class="btn" data-add="${p.id}"${out ? " disabled" : ""}>${out ? "Indisponible" : "Ajouter"}</button></div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("[data-add]:not([disabled])").forEach(b => b.onclick = () => add(+b.dataset.add));
 }
 
 /* ===== PANIER ===== */
 function add(id) {
   const p = PRODUCTS.find(x => x.id === id);
+  if (!p || p.inStock === false) return;
   const i = +$("#opt" + id).value;
   const o = p.options[i];
   const key = id + "-" + i;
@@ -62,7 +69,7 @@ function linesHTML() {
   if (!cart.length) return '<p class="empty">Votre panier est vide.</p>';
   return cart.map(c => `
     <div class="line">
-      <span>${c.name} (${c.l})</span>
+      <span>${c.name} (${c.l.replace(/ /g, "\u00a0")})</span>
       <span class="qty"><button data-m="${c.key}">−</button><span>${c.q}</span><button data-p="${c.key}">+</button></span>
       <b>${fmt(c.p * c.q)}</b>
     </div>`).join("");
@@ -125,7 +132,6 @@ $("#goOrder").onclick = closeDrawer;
 $("#burger").onclick = () => $("#nav").classList.toggle("open");
 $("#nav").onclick = () => $("#nav").classList.remove("open");
 
-$("#reviews").innerHTML = REVIEWS.map(r => `<div class="card"><p>« ${r.t} »</p><p><b>${r.n}</b></p></div>`).join("");
 $("#cAddress").textContent = CONFIG.address;
 $("#cPhone").textContent = CONFIG.phoneDisplay;
 $("#waFloat").href = `https://wa.me/${CONFIG.whatsapp}`;

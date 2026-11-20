@@ -10,6 +10,7 @@ $h = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 <h1>Espace admin – AND DEGGO</h1><form method="post"><input type="password" name="pw" placeholder="Mot de passe" required> <button>Connexion</button></form><p style="color:red"><?= $h($err ?? '') ?></p>
 <?php else:
 if (isset($_POST['status'])) db()->prepare("UPDATE orders SET status=? WHERE id=?")->execute([$_POST['status'], (int)$_POST['oid']]);
+if (isset($_POST['pid'])) db()->prepare("UPDATE products SET in_stock=? WHERE id=?")->execute([empty($_POST['in_stock']) ? 0 : 1, (int)$_POST['pid']]);
 if (isset($_POST['price'])) db()->prepare("UPDATE options SET price=? WHERE id=?")->execute([max(0,(int)$_POST['price']), (int)$_POST['opt']]);
 $orders = db()->query("SELECT * FROM orders ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $tot = array_sum(array_column(array_filter($orders, fn($o)=>$o['status']!=='Annulée'), 'total'));
@@ -21,6 +22,9 @@ $tot = array_sum(array_column(array_filter($orders, fn($o)=>$o['status']!=='Annu
 <td><?php foreach (json_decode($o['items'], true) as $i) echo $h($i['q'].' x '.$i['name'].' ('.$i['l'].')').'<br>'; ?></td>
 <td><?= number_format($o['total'],0,',',' ') ?> FCFA</td>
 <td><form method="post"><input type="hidden" name="oid" value="<?= $o['id'] ?>"><select name="status" onchange="this.form.submit()"><?php foreach (['Nouvelle','Confirmée','Livrée','Annulée'] as $s) echo '<option'.($s===$o['status']?' selected':'').'>'.$s.'</option>'; ?></select></form></td></tr><?php endforeach; ?></table></div>
+<h2>Stock des produits</h2><div class="wrap"><table><tr><th>Produit</th><th>État</th><th>Action</th></tr>
+<?php foreach (catalog() as $p): ?><tr><td><?= $h($p['name']) ?></td><td><?= $p['inStock'] ? 'En stock' : '<b style="color:#b3261e">Rupture de stock</b>' ?></td>
+<td><form method="post"><input type="hidden" name="pid" value="<?= $p['id'] ?>"><input type="hidden" name="in_stock" value="<?= $p['inStock'] ? 0 : 1 ?>"><button><?= $p['inStock'] ? 'Marquer en rupture' : 'Remettre en stock' ?></button></form></td></tr><?php endforeach; ?></table></div>
 <h2>Prix des produits</h2><div class="wrap"><table><tr><th>Produit</th><th>Format</th><th>Prix (FCFA)</th></tr>
 <?php foreach (catalog() as $p) foreach ($p['options'] as $o): ?><tr><td><?= $h($p['name']) ?></td><td><?= $h($o['l']) ?></td>
 <td><form method="post"><input type="hidden" name="opt" value="<?= $o['oid'] ?>"><input type="number" name="price" value="<?= $o['p'] ?>"> <button>OK</button></form></td></tr><?php endforeach; ?></table></div>

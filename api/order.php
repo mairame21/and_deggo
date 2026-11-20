@@ -13,6 +13,7 @@ if ($mode === 'livraison' && $adresse === '') fail('Adresse de livraison requise
 $cat = catalog(); $items = []; $sub = 0;
 foreach (($d['items'] ?? []) as $it) {
   foreach ($cat as $p) if ($p['id'] === (int)$it['id'] && isset($p['options'][(int)$it['i']])) {
+    if (!$p['inStock']) fail($p['name'] . ' est en rupture de stock');
     $o = $p['options'][(int)$it['i']]; $q = max(1, min(99, (int)$it['q']));
     $items[] = ['name'=>$p['name'],'l'=>$o['l'],'p'=>$o['p'],'q'=>$q]; $sub += $o['p'] * $q;
   }

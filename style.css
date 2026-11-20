@@ -38,7 +38,7 @@ h3{color:var(--brown)}
 .filters button.on{background:var(--brown);border-color:var(--brown);color:#fff}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
 .card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 4px 16px #5a2e1415;border-top:4px solid var(--gold)}
-.prod{transition:transform .25s}
+.prod{position:relative;transition:transform .25s}
 .prod:hover{transform:translateY(-6px)}
 .prod .ico{font-size:3.2rem;text-align:center;background:var(--sand);border-radius:50%;width:90px;height:90px;line-height:90px;margin:0 auto 8px}
 .prod h3{text-align:center;margin:6px 0}
@@ -78,3 +78,11 @@ nav.open{display:flex}
 .order{grid-template-columns:1fr}
 .logo span{font-size:1.05rem}
 }
+
+.prod.out .ico,.prod.out h3,.prod.out p,.prod.out select{opacity:.45}
+.badge-out{position:absolute;top:12px;right:12px;background:#b3261e;color:#fff;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:12px}
+.prod .btn:disabled{background:#b9a99a;color:#fff;cursor:not-allowed;transform:none;box-shadow:none}
+
+.line>span:first-child{flex:1;min-width:0}
+.line .qty{white-space:nowrap;flex:none}
+.line b{white-space:nowrap;flex:none}
